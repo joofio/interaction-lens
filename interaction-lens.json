@@ -11,7 +11,7 @@
       "valueString": "dev"
     }
   ],
-  "url": "http://hl7.eu/fhir/ig/gravitate-health/Library/mock-lib",
+  "url": "https://gravitate-health.lst.tfo.upm.es/ips/api/fhir/Library/592",
   "identifier": [
     {
       "system": "http://gravitate-health.lst.tfo.upm.es",
