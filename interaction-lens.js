@@ -88,6 +88,7 @@ let annotationProcess = (listOfCategories, enhanceTag, document, response) => {
             let elements = document.getElementsByClassName(check);
             for (let i = 0; i < elements.length; i++) {
                 elements[i].classList.add(enhanceTag);
+                elements[i].classList.add("interaction-lens");
             }
             if (document.getElementsByTagName("head").length > 0) {
                 document.getElementsByTagName("head")[0].remove();
