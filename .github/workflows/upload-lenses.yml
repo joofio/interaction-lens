@@ -8,6 +8,3 @@ on:
 jobs:
   upload-lens:
     uses: Gravitate-Health/reusable-workflows/.github/workflows/lenses-upload.yaml@main
-    secrets:
-      FHIR_SERVER_URL: ${{ secrets.FHIR_SERVER_URL }}
-      DELETE_LENS_URL: ${{ secrets.DELETE_LENS_URL }}
