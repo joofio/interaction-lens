@@ -1,0 +1,27 @@
+{
+  "name": "pregnancy-lens",
+  "version": "1.0.0",
+  "description": "",
+  "main": "pregnancy-lens.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joofio/pregnancy-lens.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/joofio/pregnancy-lens/issues"
+  },
+  "homepage": "https://github.com/joofio/pregnancy-lens#readme",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jsdom": "^26.1.0"
+  }
+}

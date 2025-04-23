@@ -18,24 +18,66 @@ let enhance = async () => {
     let arrayOfIngredientCodes = [];
 
     // Iterates through the IPS entry searching for conditions
-    ips.entry.forEach((element) => {
-        if (element.resource.resourceType == "Medication") {
-            if (element.resource.ingredient != undefined) {
-                element.resource.ingredient.forEach((ingredient) => {
-                    if (ingredient.itemCodeableConcept != undefined) {
-                        ingredient.itemCodeableConcept.coding.forEach((coding) => {
-                            console.log("Ingredient: " + coding.code + " - " + coding.system)
-                            arrayOfIngredientCodes.push({
-                                code: coding.code,
-                                system: "",
-                            });
+    // Helper: resolve a Medication reference
+function resolveReference(reference, entries) {
+    const [type, id] = reference.split('/');
+    return entries.find(
+        (el) => el.resource.resourceType === type && el.resource.id === id
+    )?.resource;
+}
+
+const medicationTypes = [
+    "MedicationStatement",
+    "MedicationDispense",
+    "MedicationAdministration",
+    "MedicationRequest"
+];
+
+ips.entry.forEach((element) => {
+    const resource = element.resource;
+
+    if (medicationTypes.includes(resource.resourceType)) {
+        // Case 1: medicationCodeableConcept
+        if (resource.medicationCodeableConcept?.coding) {
+            resource.medicationCodeableConcept.coding.forEach((coding) => {
+                console.log(resource.resourceType + " CodeableConcept:", coding.code, "-", coding.system, "-",coding.display);
+                arrayOfIngredientCodes.push({
+                    code: coding.code,
+                    system: coding.system || "",
+                });
+            });
+        }
+
+        // Case 2: medicationReference → resolve → extract code + ingredients
+        else if (resource.medicationReference?.reference) {
+            const med = resolveReference(resource.medicationReference.reference, ips.entry);
+
+            if (med) {
+                // Medication.code
+                med.code?.coding?.forEach((coding) => {
+                    console.log(resource.resourceType + " via Medication Reference (code):", coding.code, "-", coding.system);
+                    arrayOfIngredientCodes.push({
+                        code: coding.code,
+                        system: coding.system || "",
+                    });
+                });
+
+                // Medication.ingredient
+                med.ingredient?.forEach((ingredient) => {
+                    ingredient.itemCodeableConcept?.coding?.forEach((coding) => {
+                        console.log(resource.resourceType + " via Medication Reference (ingredient):", coding.code, "-", coding.system);
+                        arrayOfIngredientCodes.push({
+                            code: coding.code,
+                            system: coding.system || "",
                         });
-                    }
-                })
+                    });
+                });
             }
         }
-    });
+    }
+});
 
+    console.log(arrayOfIngredientCodes);
     // If there are no conditions, return the ePI as it is
     if (arrayOfIngredientCodes.length == 0) {
         return htmlData;
@@ -49,7 +91,7 @@ let enhance = async () => {
             compositions++;
             //Iterated through the Condition element searching for conditions
             entry.resource.extension.forEach((element) => {
-                
+
                 // Check if the position of the extension[1] is correct
                 if (element.extension[1].url == "concept") {
                     // Search through the different terminologies that may be avaible to check in the condition
@@ -58,8 +100,9 @@ let enhance = async () => {
                             (coding) => {
                                 console.log("Extension: " + element.extension[0].valueString + ":" + coding.code + " - " + coding.system)
                                 // Check if the code is in the list of categories to search
-                                if (equals(arrayOfIngredientCodes, { code: coding.code, system: "" })) {
+                                if (equals(arrayOfIngredientCodes, { code: coding.code, system: coding.system })) {
                                     // Check if the category is already in the list of categories
+                                    console.log("Found",element.extension[0].valueString)
                                     categories.push(element.extension[0].valueString);
                                 }
                             }
@@ -70,6 +113,8 @@ let enhance = async () => {
         }
     });
 
+    console.log(categories);
+
     if (compositions == 0) {
         throw new Error('Bad ePI: no category "Composition" found');
     }
@@ -77,7 +122,7 @@ let enhance = async () => {
     if (categories.length == 0) {
         return htmlData;
     }
-    
+
     //Focus (adds highlight class) the html applying every category found
     return await annotateHTMLsection(categories, "highlight");
 };
