@@ -3,9 +3,27 @@ let htmlData = html;
 
 let epiData = epi;
 let ipsData = ips;
+let lang = "";
 
 let getSpecification = () => {
     return "1.0.0";
+};
+
+const getExplanation = (lang = "en") => {
+    const explanations = {
+        en: "This lens highlights potential interactions between medications.",
+        pt: "Esta lente destaca potenciais interações entre medicamentos.",
+        es: "Esta lente resalta las posibles interacciones entre medicamentos.",
+        da: "Denne linse fremhæver potentielle interaktioner mellem lægemidler.",
+    };
+    return explanations[lang] || explanations.en;
+};
+
+const getReport = (lang = "en") => {
+    return {
+        message: getExplanation(lang),
+        status: "success",
+    };
 };
 
 let enhance = async () => {
@@ -40,7 +58,6 @@ ips.entry.forEach((element) => {
         // Case 1: medicationCodeableConcept
         if (resource.medicationCodeableConcept?.coding) {
             resource.medicationCodeableConcept.coding.forEach((coding) => {
-                console.log(resource.resourceType + " CodeableConcept:", coding.code, "-", coding.system, "-",coding.display);
                 arrayOfIngredientCodes.push({
                     code: coding.code,
                     system: coding.system || "",
@@ -55,7 +72,6 @@ ips.entry.forEach((element) => {
             if (med) {
                 // Medication.code
                 med.code?.coding?.forEach((coding) => {
-                    console.log(resource.resourceType + " via Medication Reference (code):", coding.code, "-", coding.system);
                     arrayOfIngredientCodes.push({
                         code: coding.code,
                         system: coding.system || "",
@@ -65,7 +81,6 @@ ips.entry.forEach((element) => {
                 // Medication.ingredient
                 med.ingredient?.forEach((ingredient) => {
                     ingredient.itemCodeableConcept?.coding?.forEach((coding) => {
-                        console.log(resource.resourceType + " via Medication Reference (ingredient):", coding.code, "-", coding.system);
                         arrayOfIngredientCodes.push({
                             code: coding.code,
                             system: coding.system || "",
@@ -77,7 +92,6 @@ ips.entry.forEach((element) => {
     }
 });
 
-    console.log(arrayOfIngredientCodes);
     // If there are no conditions, return the ePI as it is
     if (arrayOfIngredientCodes.length == 0) {
         return htmlData;
@@ -98,11 +112,9 @@ ips.entry.forEach((element) => {
                     if (element.extension[1].valueCodeableReference.concept != undefined) {
                         element.extension[1].valueCodeableReference.concept.coding.forEach(
                             (coding) => {
-                                console.log("Extension: " + element.extension[0].valueString + ":" + coding.code + " - " + coding.system)
                                 // Check if the code is in the list of categories to search
                                 if (equals(arrayOfIngredientCodes, { code: coding.code, system: coding.system })) {
                                     // Check if the category is already in the list of categories
-                                    console.log("Found",element.extension[0].valueString)
                                     categories.push(element.extension[0].valueString);
                                 }
                             }
@@ -112,8 +124,6 @@ ips.entry.forEach((element) => {
             });
         }
     });
-
-    console.log(categories);
 
     if (compositions == 0) {
         throw new Error('Bad ePI: no category "Composition" found');
@@ -140,9 +150,7 @@ let annotationProcess = (listOfCategories, enhanceTag, document, response) => {
             }
             if (document.getElementsByTagName("body").length > 0) {
                 response = document.getElementsByTagName("body")[0].innerHTML;
-                console.log("Response: " + response);
             } else {
-                console.log("Response: " + document.documentElement.innerHTML);
                 response = document.documentElement.innerHTML;
             }
         }
@@ -152,9 +160,7 @@ let annotationProcess = (listOfCategories, enhanceTag, document, response) => {
         throw new Error(
             "Annotation proccess failed: Returned empty or null response"
         );
-        //return htmlData
     } else {
-        console.log("Response: " + response);
         return response;
     }
 }
@@ -184,4 +190,6 @@ let equals = (array, object) => {
 return {
     enhance: enhance,
     getSpecification: getSpecification,
+    explanation: (language) => getExplanation(language || lang || "en"),
+    report: (language) => getReport(language || lang || "en"),
 };
