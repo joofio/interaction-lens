@@ -37,60 +37,60 @@ let enhance = async () => {
 
     // Iterates through the IPS entry searching for conditions
     // Helper: resolve a Medication reference
-function resolveReference(reference, entries) {
-    const [type, id] = reference.split('/');
-    return entries.find(
-        (el) => el.resource.resourceType === type && el.resource.id === id
-    )?.resource;
-}
+    function resolveReference(reference, entries) {
+        const [type, id] = reference.split('/');
+        return entries.find(
+            (el) => el.resource.resourceType === type && el.resource.id === id
+        )?.resource;
+    }
 
-const medicationTypes = [
-    "MedicationStatement",
-    "MedicationDispense",
-    "MedicationAdministration",
-    "MedicationRequest"
-];
+    const medicationTypes = [
+        "MedicationStatement",
+        "MedicationDispense",
+        "MedicationAdministration",
+        "MedicationRequest"
+    ];
 
-ips.entry.forEach((element) => {
-    const resource = element.resource;
+    ips.entry.forEach((element) => {
+        const resource = element.resource;
 
-    if (medicationTypes.includes(resource.resourceType)) {
-        // Case 1: medicationCodeableConcept
-        if (resource.medicationCodeableConcept?.coding) {
-            resource.medicationCodeableConcept.coding.forEach((coding) => {
-                arrayOfIngredientCodes.push({
-                    code: coding.code,
-                    system: coding.system || "",
-                });
-            });
-        }
-
-        // Case 2: medicationReference → resolve → extract code + ingredients
-        else if (resource.medicationReference?.reference) {
-            const med = resolveReference(resource.medicationReference.reference, ips.entry);
-
-            if (med) {
-                // Medication.code
-                med.code?.coding?.forEach((coding) => {
+        if (medicationTypes.includes(resource.resourceType)) {
+            // Case 1: medicationCodeableConcept
+            if (resource.medicationCodeableConcept?.coding) {
+                resource.medicationCodeableConcept.coding.forEach((coding) => {
                     arrayOfIngredientCodes.push({
                         code: coding.code,
                         system: coding.system || "",
                     });
                 });
+            }
 
-                // Medication.ingredient
-                med.ingredient?.forEach((ingredient) => {
-                    ingredient.itemCodeableConcept?.coding?.forEach((coding) => {
+            // Case 2: medicationReference → resolve → extract code + ingredients
+            else if (resource.medicationReference?.reference) {
+                const med = resolveReference(resource.medicationReference.reference, ips.entry);
+
+                if (med) {
+                    // Medication.code
+                    med.code?.coding?.forEach((coding) => {
                         arrayOfIngredientCodes.push({
                             code: coding.code,
                             system: coding.system || "",
                         });
                     });
-                });
+
+                    // Medication.ingredient
+                    med.ingredient?.forEach((ingredient) => {
+                        ingredient.itemCodeableConcept?.coding?.forEach((coding) => {
+                            arrayOfIngredientCodes.push({
+                                code: coding.code,
+                                system: coding.system || "",
+                            });
+                        });
+                    });
+                }
             }
         }
-    }
-});
+    });
 
     // If there are no conditions, return the ePI as it is
     if (arrayOfIngredientCodes.length == 0) {
